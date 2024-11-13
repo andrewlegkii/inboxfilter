@@ -1,12 +1,18 @@
 import win32com.client
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
+import json
+import os
 
 class OutlookFilterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Фильтр почты Outlook")
-        self.root.geometry("600x400")  # Устанавливаем размер окна
+        self.root.geometry("600x500")  # Устанавливаем размер окна
+
+        # Инициализация переменных для фильтров
+        self.filters = []
+        self.load_filters()
 
         # Метки и поля для ввода
         self.label_filter = tk.Label(root, text="Введите фильтр (например, отправитель или тема):")
@@ -15,22 +21,68 @@ class OutlookFilterApp:
         self.filter_entry = tk.Entry(root, width=50)
         self.filter_entry.grid(row=0, column=1, padx=10, pady=10)
 
+        self.text_search = tk.Label(root, text="Введите текст для поиска (опционально):")
+        self.text_search.grid(row=1, column=0, padx=10, pady=10)
+
+        self.text_entry = tk.Entry(root, width=50)
+        self.text_entry.grid(row=1, column=1, padx=10, pady=10)
+
         # Кнопка для фильтрации
         self.filter_button = tk.Button(root, text="Фильтровать", command=self.filter_emails)
-        self.filter_button.grid(row=1, column=0, columnspan=2, pady=10)
+        self.filter_button.grid(row=2, column=0, columnspan=2, pady=10)
 
         # Поле для вывода результатов
-        self.result_text = scrolledtext.ScrolledText(root, height=15, width=70, wrap=tk.WORD)
-        self.result_text.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+        self.result_text = scrolledtext.ScrolledText(root, height=10, width=70, wrap=tk.WORD)
+        self.result_text.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
         # Информация о статусе
         self.status_label = tk.Label(root, text="", fg="blue")
-        self.status_label.grid(row=3, column=0, columnspan=2, pady=5)
+        self.status_label.grid(row=4, column=0, columnspan=2, pady=5)
+
+        # Список фильтров
+        self.filter_dropdown = tk.OptionMenu(root, tk.StringVar(), *self.filters)
+        self.filter_dropdown.grid(row=5, column=0, columnspan=2, pady=5)
+
+        # Кнопка для сохранения фильтра
+        self.save_filter_button = tk.Button(root, text="Сохранить фильтр", command=self.save_filter)
+        self.save_filter_button.grid(row=6, column=0, columnspan=2, pady=10)
+
+        # Контейнер для кнопок
+        self.canvas = tk.Canvas(root)
+        self.scrollbar = tk.Scrollbar(root, orient="vertical", command=self.canvas.yview)
+        self.canvas.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
+        self.canvas.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.frame = tk.Frame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.frame, anchor="nw")
+        self.frame.bind("<Configure>", lambda e: self.canvas.config(scrollregion=self.canvas.bbox("all")))
 
         self.email_buttons = []  # Список для хранения кнопок для писем
 
+    def load_filters(self):
+        # Загружаем фильтры из файла, если он существует
+        if os.path.exists("filters.json"):
+            with open("filters.json", "r", encoding="utf-8") as f:
+                self.filters = json.load(f)
+
+    def save_filters(self):
+        # Сохраняем список фильтров в файл
+        with open("filters.json", "w", encoding="utf-8") as f:
+            json.dump(self.filters, f, ensure_ascii=False)
+
+    def save_filter(self):
+        # Сохраняем текущий фильтр
+        filter_name = self.filter_entry.get().strip()
+        if filter_name and filter_name not in self.filters:
+            self.filters.append(filter_name)
+            self.filter_dropdown["menu"].add_command(label=filter_name, command=lambda value=filter_name: self.filter_dropdown.setvar(self.filter_dropdown.cget("textvariable"), value))
+            self.save_filters()
+
     def filter_emails(self):
         filter_text = self.filter_entry.get().strip()
+        additional_text = self.text_entry.get().strip()
+
         if not filter_text:
             messagebox.showwarning("Ошибка", "Пожалуйста, введите фильтр!")
             return
@@ -53,12 +105,13 @@ class OutlookFilterApp:
 
             for message in messages:
                 try:
-                    if filter_text.lower() in message.Subject.lower() or filter_text.lower() in message.SenderName.lower():
+                    if (filter_text.lower() in message.Subject.lower() or filter_text.lower() in message.SenderName.lower()) and \
+                            (additional_text.lower() in message.Body.lower() or not additional_text):
                         email_info = f"Тема: {message.Subject}\nОтправитель: {message.SenderName}\nДата: {message.ReceivedTime}"
                         filtered_emails.append(email_info)
 
                         # Создаем кнопку для открытия письма
-                        button = tk.Button(self.root, text=f"Открыть письмо: {message.Subject}", command=lambda m=message: self.open_email(m))
+                        button = tk.Button(self.frame, text=f"Открыть письмо: {message.Subject}", command=lambda m=message: self.open_email(m))
                         self.email_buttons.append(button)
                 except AttributeError:
                     continue  # Игнорировать сообщения, которые не имеют атрибутов
@@ -79,9 +132,9 @@ class OutlookFilterApp:
             self.status_label.config(text="Поиск завершен.")  # Обновляем статус
 
     def place_buttons(self):
-        # Расположим кнопки ниже текстового поля
-        for i, button in enumerate(self.email_buttons):
-            button.grid(row=3+i, column=0, columnspan=2, pady=5)
+        # Расположим кнопки с возможностью прокрутки
+        for button in self.email_buttons:
+            button.pack(pady=5)
 
     def open_email(self, message):
         # Открываем сообщение в Outlook
