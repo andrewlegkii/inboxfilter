@@ -8,7 +8,7 @@ class OutlookFilterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Фильтр почты Outlook")
-        self.root.geometry("600x500")  # Устанавливаем размер окна
+        self.root.geometry("650x800")  # Устанавливаем размер окна
 
         # Инициализация переменных для фильтров
         self.filters = []
