@@ -8,7 +8,7 @@ class OutlookFilterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Фильтр почты Outlook")
-        self.root.geometry("600x500")  # Устанавливаем размер окна
+        self.root.geometry("650x800")  # Устанавливаем размер окна
 
         # Инициализация переменных для фильтров
         self.filters = []
@@ -65,6 +65,14 @@ class OutlookFilterApp:
         self.scrollbar.grid(row=7, column=2, sticky='ns')  # Прокрутка теперь используется с grid
 
         self.email_buttons = []  # Список для хранения кнопок для писем
+
+        # Кнопка для сброса фильтров
+        self.reset_button = tk.Button(root, text="Сбросить фильтры", command=self.reset_filters)
+        self.reset_button.grid(row=8, column=0, columnspan=2, pady=10)
+
+        # Кнопка для открытия FAQ
+        self.faq_button = tk.Button(root, text="FAQ", command=self.open_faq)
+        self.faq_button.grid(row=9, column=0, columnspan=2, pady=10)
 
     def load_filters(self):
         # Загружаем фильтры из файла, если он существует
@@ -157,7 +165,35 @@ class OutlookFilterApp:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось открыть письмо: {e}")
 
-# Запуск приложения
+    def reset_filters(self):
+        # Сбрасываем фильтры, очищаем поля и список кнопок
+        self.filter_entry.delete(0, tk.END)
+        self.text_entry.delete(0, tk.END)
+        self.result_text.delete(1.0, tk.END)
+
+        # Очищаем старые кнопки
+        for button in self.email_buttons:
+            button.grid_forget()
+
+        self.email_buttons.clear()  # Очищаем список кнопок
+
+        self.status_label.config(text="Фильтры сброшены.")  # Уведомление о сбросе фильтров
+
+    def open_faq(self):
+        # Открытие FAQ из текстового файла
+        try:
+            with open("faq.txt", "r", encoding="utf-8") as f:
+                faq_content = f.read()
+            faq_window = tk.Toplevel(self.root)
+            faq_window.title("FAQ - Описание программы")
+            faq_text = scrolledtext.ScrolledText(faq_window, wrap=tk.WORD, width=60, height=20)
+            faq_text.insert(tk.END, faq_content)
+            faq_text.config(state=tk.DISABLED)  # Отключаем редактирование
+            faq_text.pack(padx=10, pady=10)
+        except FileNotFoundError:
+            messagebox.showerror("Ошибка", "Файл FAQ не найден!")
+
+# Создание и запуск приложения
 if __name__ == "__main__":
     root = tk.Tk()
     app = OutlookFilterApp(root)
