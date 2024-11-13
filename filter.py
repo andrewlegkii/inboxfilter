@@ -57,11 +57,12 @@ class OutlookFilterApp:
         self.scrollbar = tk.Scrollbar(root, orient="vertical", command=self.canvas.yview)
         self.canvas.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
         self.canvas.config(yscrollcommand=self.scrollbar.set)
-        self.scrollbar.pack(side="right", fill="y")
 
         self.frame = tk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.frame, anchor="nw")
         self.frame.bind("<Configure>", lambda e: self.canvas.config(scrollregion=self.canvas.bbox("all")))
+
+        self.scrollbar.grid(row=7, column=2, sticky='ns')  # Прокрутка теперь используется с grid
 
         self.email_buttons = []  # Список для хранения кнопок для писем
 
@@ -146,7 +147,7 @@ class OutlookFilterApp:
     def place_buttons(self):
         # Расположим кнопки с возможностью прокрутки
         for button in self.email_buttons:
-            button.pack(pady=5)
+            button.grid(row=self.email_buttons.index(button), column=0, pady=5)
 
     def open_email(self, message):
         # Открываем сообщение в Outlook
