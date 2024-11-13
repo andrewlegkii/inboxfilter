@@ -96,8 +96,8 @@ class OutlookFilterApp:
         filter_text = self.filter_entry.get().strip()
         additional_text = self.text_entry.get().strip()
 
-        if not filter_text:
-            messagebox.showwarning("Ошибка", "Пожалуйста, введите фильтр!")
+        if not filter_text and not additional_text:
+            messagebox.showwarning("Ошибка", "Пожалуйста, введите хотя бы один параметр для поиска!")
             return
 
         self.status_label.config(text="Поиск сообщений...")  # Уведомление о начале поиска
@@ -118,8 +118,9 @@ class OutlookFilterApp:
 
             for message in messages:
                 try:
-                    if (filter_text.lower() in message.Subject.lower() or filter_text.lower() in message.SenderName.lower()) and \
-                            (additional_text.lower() in message.Body.lower() or not additional_text):
+                    if ((filter_text.lower() in message.Subject.lower() or filter_text.lower() in message.SenderName.lower()) and \
+                            (additional_text.lower() in message.Body.lower() or not additional_text)) or \
+                            (not filter_text and additional_text.lower() in message.Body.lower()):
                         email_info = f"Тема: {message.Subject}\nОтправитель: {message.SenderName}\nДата: {message.ReceivedTime}"
                         filtered_emails.append(email_info)
 
@@ -146,8 +147,8 @@ class OutlookFilterApp:
 
     def place_buttons(self):
         # Расположим кнопки с возможностью прокрутки
-        for button in self.email_buttons:
-            button.grid(row=self.email_buttons.index(button), column=0, pady=5)
+        for i, button in enumerate(self.email_buttons):
+            button.grid(row=i, column=0, pady=5, sticky="w")  # Заставим кнопки выравниваться по левому краю
 
     def open_email(self, message):
         # Открываем сообщение в Outlook
