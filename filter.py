@@ -8,7 +8,7 @@ class OutlookFilterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Фильтр почты Outlook")
-        self.root.geometry("650x800")  # Устанавливаем размер окна
+        self.root.geometry("600x500")  # Устанавливаем размер окна
 
         # Инициализация переменных для фильтров
         self.filters = []
@@ -40,13 +40,14 @@ class OutlookFilterApp:
         self.status_label.grid(row=4, column=0, columnspan=2, pady=5)
 
         # Если есть фильтры, создаем выпадающий список
+        self.selected_filter = tk.StringVar(root)
         if self.filters:
-            self.selected_filter = tk.StringVar(root)
             self.selected_filter.set(self.filters[0])  # Устанавливаем первый фильтр как выбранный по умолчанию
             self.filter_dropdown = tk.OptionMenu(root, self.selected_filter, *self.filters)
-            self.filter_dropdown.grid(row=5, column=0, columnspan=2, pady=5)
         else:
             self.filter_dropdown = None  # Если фильтров нет, не создаем выпадающий список
+
+        self.filter_dropdown.grid(row=5, column=0, columnspan=2, pady=5) if self.filter_dropdown else None
 
         # Кнопка для сохранения фильтра
         self.save_filter_button = tk.Button(root, text="Сохранить фильтр", command=self.save_filter)
@@ -87,18 +88,22 @@ class OutlookFilterApp:
 
     def save_filter(self):
         # Сохраняем текущий фильтр
-        filter_name = self.filter_entry.get().strip()
-        if filter_name and filter_name not in self.filters:
-            self.filters.append(filter_name)
+        filter_text = self.filter_entry.get().strip()
+        if filter_text and filter_text not in self.filters:
+            self.filters.append(filter_text)
             self.save_filters()
 
             # Обновляем выпадающий список, если фильтры были изменены
             if self.filter_dropdown:
                 self.filter_dropdown.destroy()
             self.selected_filter = tk.StringVar(self.root)
-            self.selected_filter.set(self.filters[0])  # Устанавливаем первый фильтр как выбранный
+            self.selected_filter.set(filter_text)  # Устанавливаем сохраненный фильтр как выбранный
             self.filter_dropdown = tk.OptionMenu(self.root, self.selected_filter, *self.filters)
             self.filter_dropdown.grid(row=5, column=0, columnspan=2, pady=5)
+
+            # Обновляем текстовое поле с фильтром
+            self.filter_entry.delete(0, tk.END)
+            self.filter_entry.insert(0, filter_text)
 
     def filter_emails(self):
         filter_text = self.filter_entry.get().strip()
@@ -174,13 +179,9 @@ class OutlookFilterApp:
         # Очищаем старые кнопки
         for button in self.email_buttons:
             button.grid_forget()
-
-        self.email_buttons.clear()  # Очищаем список кнопок
-
-        self.status_label.config(text="Фильтры сброшены.")  # Уведомление о сбросе фильтров
+        self.email_buttons.clear()
 
     def open_faq(self):
-        # Открытие FAQ из текстового файла
         try:
             with open("faq.txt", "r", encoding="utf-8") as f:
                 faq_content = f.read()
