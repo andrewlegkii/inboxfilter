@@ -27,6 +27,8 @@ class OutlookFilterApp:
         self.status_label = tk.Label(root, text="", fg="blue")
         self.status_label.grid(row=3, column=0, columnspan=2, pady=5)
 
+        self.email_buttons = []  # Список для хранения кнопок для писем
+
     def filter_emails(self):
         filter_text = self.filter_entry.get().strip()
         if not filter_text:
@@ -47,10 +49,17 @@ class OutlookFilterApp:
             messages.Sort("[ReceivedTime]", True)
 
             filtered_emails = []
+            self.email_buttons.clear()  # Очищаем старые кнопки
+
             for message in messages:
                 try:
                     if filter_text.lower() in message.Subject.lower() or filter_text.lower() in message.SenderName.lower():
-                        filtered_emails.append(f"Тема: {message.Subject}\nОтправитель: {message.SenderName}\nДата: {message.ReceivedTime}\n")
+                        email_info = f"Тема: {message.Subject}\nОтправитель: {message.SenderName}\nДата: {message.ReceivedTime}"
+                        filtered_emails.append(email_info)
+
+                        # Создаем кнопку для открытия письма
+                        button = tk.Button(self.root, text=f"Открыть письмо: {message.Subject}", command=lambda m=message: self.open_email(m))
+                        self.email_buttons.append(button)
                 except AttributeError:
                     continue  # Игнорировать сообщения, которые не имеют атрибутов
 
@@ -61,10 +70,25 @@ class OutlookFilterApp:
             else:
                 self.result_text.insert(tk.END, "Нет сообщений, соответствующих фильтру.")
 
+            # Располагаем кнопки
+            self.place_buttons()
+
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось подключиться к Outlook: {e}")
         finally:
             self.status_label.config(text="Поиск завершен.")  # Обновляем статус
+
+    def place_buttons(self):
+        # Расположим кнопки ниже текстового поля
+        for i, button in enumerate(self.email_buttons):
+            button.grid(row=3+i, column=0, columnspan=2, pady=5)
+
+    def open_email(self, message):
+        # Открываем сообщение в Outlook
+        try:
+            message.Display()  # Открыть сообщение в Outlook
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось открыть письмо: {e}")
 
 # Запуск приложения
 if __name__ == "__main__":
